@@ -11,9 +11,15 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity {
-    boolean isRedPlayerTurn = true;
+    Player currentPlayer;
+    Player gameState[] = new Player[9];
+    Integer [][] winningPositions = {{0,1,2}, {3,4,5}, {6,7,8}, {0,3,6}, {1,4,7}, {2,5,8}, {0,4,8}, {2,4,6}};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,17 +39,16 @@ public class MainActivity extends AppCompatActivity {
         TextView playerTurnValueLabel = (TextView)findViewById(R.id.playerTurnValueLabel);
         ImageView playerToken = (ImageView) findViewById(R.id.playerToken);
 
-        if(isRedPlayerTurn) {
-//            playerTurnValueLabel.setTextColor(Color.RED);
-            //playerTurnValueLabel.setBackgroundColor(Color.RED);
-            playerToken.setImageResource(R.drawable.red);
-            playerTurnValueLabel.setText("RED");
-        }else{
-//            playerTurnValueLabel.setTextColor(Color.YELLOW);
-            //playerTurnValueLabel.setBackgroundColor(Color.YELLOW);
-            playerToken.setImageResource(R.drawable.yellow);
-            playerTurnValueLabel.setText("YELLOW");
+        //initialize game state to undefined
+        for (int i=0; i<gameState.length;i++){
+            gameState[i] = Player.UNDEFINED;
         }
+
+        currentPlayer = Player.RED;
+        playerToken.setImageResource(R.drawable.red);
+        playerTurnValueLabel.setText("RED");
+
+
     }
 
     @Override
@@ -70,27 +75,57 @@ public class MainActivity extends AppCompatActivity {
 
     public void dropIn(View view){
         ImageView counter = (ImageView) view;
-        TextView playerTurnValueLabel = (TextView)findViewById(R.id.playerTurnValueLabel);
-        ImageView playerToken = (ImageView) findViewById(R.id.playerToken);
-        counter.setTranslationY(-1000f);
-        counter.setAlpha(0.0f);
-        int imageResource = -1;
-        if(isRedPlayerTurn){
-//            playerTurnValueLabel.setTextColor(Color.YELLOW);
-            //playerTurnValueLabel.setBackgroundColor(Color.YELLOW);
-            playerToken.setImageResource(R.drawable.yellow);
-            playerTurnValueLabel.setText("YELLOW");
-            imageResource = R.drawable.red;
-            isRedPlayerTurn = false;
-        }else{
-//            playerTurnValueLabel.setTextColor(Color.RED);
-            //playerTurnValueLabel.setBackgroundColor(Color.RED);
-            playerToken.setImageResource(R.drawable.red);
-            playerTurnValueLabel.setText("RED");
-            imageResource = R.drawable.yellow;
-            isRedPlayerTurn = true;
+        int counterTag = Integer.parseInt(counter.getTag().toString());
+        if(gameState[counterTag] != Player.UNDEFINED){
+            Toast.makeText(getApplicationContext(), "Dont cheat!!! that place is already taken :P", Toast.LENGTH_LONG).show();
+        }else {
+
+            gameState[counterTag] = currentPlayer;
+            //check if player won
+            ArrayList<Integer> exisitingPlayerPositions = getPositions(currentPlayer);
+            if(isWinner(exisitingPlayerPositions)){
+                Toast.makeText(getApplicationContext(), currentPlayer + " WON!!!!", Toast.LENGTH_SHORT).show();
+            };
+
+            TextView playerTurnValueLabel = (TextView) findViewById(R.id.playerTurnValueLabel);
+            ImageView playerToken = (ImageView) findViewById(R.id.playerToken);
+            counter.setTranslationY(-1000f);
+            counter.setAlpha(0.0f);
+            int imageResource = -1;
+            if (currentPlayer == Player.RED) {
+                playerToken.setImageResource(R.drawable.yellow);
+                playerTurnValueLabel.setText("YELLOW");
+                imageResource = R.drawable.red;
+                currentPlayer = Player.YELLOW;
+            } else {
+                playerToken.setImageResource(R.drawable.red);
+                playerTurnValueLabel.setText("RED");
+                imageResource = R.drawable.yellow;
+                currentPlayer = Player.RED;
+            }
+            counter.setImageResource(imageResource);
+            counter.animate().alpha(1.0f).translationYBy(1000f).rotation(180).setDuration(400);
         }
-        counter.setImageResource(imageResource);
-        counter.animate().alpha(1.0f).translationYBy(1000f).rotation(180).setDuration(400);
+
+    }
+    private ArrayList<Integer> getPositions(Player player){
+        ArrayList<Integer> playerPositions = new ArrayList<Integer>();
+        for(int i=0; i<gameState.length;i++){
+            if(gameState[i] == player){
+                playerPositions.add(i);
+            }
+        }
+        return playerPositions;
+    }
+    private boolean isWinner(ArrayList<Integer> playerPositions){
+        //System.out.println("winningPositions.length : " + winningPositions.length);
+        boolean winnerFlag = false;
+        for(int i=0; i < winningPositions.length; i++){
+            if(playerPositions.containsAll(Arrays.asList(winningPositions[i]))){
+                winnerFlag = true;
+            }
+        }
+
+        return winnerFlag;
     }
 }
