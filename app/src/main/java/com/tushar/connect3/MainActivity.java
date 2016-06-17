@@ -9,7 +9,9 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.GridLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,6 +20,7 @@ import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity {
     Player currentPlayer;
+    boolean isGameActive = true;
     Player gameState[] = new Player[9];
     Integer [][] winningPositions = {{0,1,2}, {3,4,5}, {6,7,8}, {0,3,6}, {1,4,7}, {2,5,8}, {0,4,8}, {2,4,6}};
 
@@ -40,9 +43,7 @@ public class MainActivity extends AppCompatActivity {
         ImageView playerToken = (ImageView) findViewById(R.id.playerToken);
 
         //initialize game state to undefined
-        for (int i=0; i<gameState.length;i++){
-            gameState[i] = Player.UNDEFINED;
-        }
+        resetGameState();
 
         currentPlayer = Player.RED;
         playerToken.setImageResource(R.drawable.red);
@@ -50,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -74,37 +76,56 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void dropIn(View view){
-        ImageView counter = (ImageView) view;
-        int counterTag = Integer.parseInt(counter.getTag().toString());
-        if(gameState[counterTag] != Player.UNDEFINED){
-            Toast.makeText(getApplicationContext(), "Dont cheat!!! that place is already taken :P", Toast.LENGTH_LONG).show();
-        }else {
-
-            gameState[counterTag] = currentPlayer;
-            //check if player won
-            ArrayList<Integer> exisitingPlayerPositions = getPositions(currentPlayer);
-            if(isWinner(exisitingPlayerPositions)){
-                Toast.makeText(getApplicationContext(), currentPlayer + " WON!!!!", Toast.LENGTH_SHORT).show();
-            };
-
-            TextView playerTurnValueLabel = (TextView) findViewById(R.id.playerTurnValueLabel);
-            ImageView playerToken = (ImageView) findViewById(R.id.playerToken);
-            counter.setTranslationY(-1000f);
-            counter.setAlpha(0.0f);
-            int imageResource = -1;
-            if (currentPlayer == Player.RED) {
-                playerToken.setImageResource(R.drawable.yellow);
-                playerTurnValueLabel.setText("YELLOW");
-                imageResource = R.drawable.red;
-                currentPlayer = Player.YELLOW;
+        if(isGameActive) {
+            Player previousPlayer;
+            previousPlayer = currentPlayer;
+            ImageView counter = (ImageView) view;
+            int counterTag = Integer.parseInt(counter.getTag().toString());
+            if (gameState[counterTag] != Player.UNDEFINED) {
+                Toast.makeText(getApplicationContext(), "Dont cheat!!! that place is already taken :P", Toast.LENGTH_LONG).show();
             } else {
-                playerToken.setImageResource(R.drawable.red);
-                playerTurnValueLabel.setText("RED");
-                imageResource = R.drawable.yellow;
-                currentPlayer = Player.RED;
+
+                gameState[counterTag] = currentPlayer;
+                //check if player won
+                ArrayList<Integer> exisitingPlayerPositions = getPositions(currentPlayer);
+
+                TextView playerTurnValueLabel = (TextView) findViewById(R.id.playerTurnValueLabel);
+                ImageView playerToken = (ImageView) findViewById(R.id.playerToken);
+                //counter.setTranslationY(-1000f);
+                counter.setAlpha(0.0f);
+                int imageResource = -1;
+                if (currentPlayer == Player.RED) {
+                    playerToken.setImageResource(R.drawable.yellow);
+                    playerTurnValueLabel.setText("YELLOW");
+                    imageResource = R.drawable.red;
+                    currentPlayer = Player.YELLOW;
+                } else {
+                    playerToken.setImageResource(R.drawable.red);
+                    playerTurnValueLabel.setText("RED");
+                    imageResource = R.drawable.yellow;
+                    currentPlayer = Player.RED;
+                }
+                counter.setImageResource(imageResource);
+                counter.animate().
+                        alpha(1.0f).
+                        //translationYBy(1000f).
+                        rotation(180).
+                        setDuration(400);
+                if (isWinner(exisitingPlayerPositions)) {
+                    LinearLayout playAgainLayout = (LinearLayout) findViewById(R.id.playAgainLayout);
+                    TextView winningMessage = (TextView) findViewById(R.id.winningMessage);
+                    winningMessage.setText(previousPlayer + " wins!!!");
+                    playAgainLayout.setVisibility(View.VISIBLE);
+                    isGameActive = false;
+                }else if(isDraw()){
+                    LinearLayout playAgainLayout = (LinearLayout) findViewById(R.id.playAgainLayout);
+                    TextView winningMessage = (TextView) findViewById(R.id.winningMessage);
+                    winningMessage.setText("Game Drawn");
+                    playAgainLayout.setVisibility(View.VISIBLE);
+                    isGameActive = false;
+                }
+                ;
             }
-            counter.setImageResource(imageResource);
-            counter.animate().alpha(1.0f).translationYBy(1000f).rotation(180).setDuration(400);
         }
 
     }
@@ -125,7 +146,38 @@ public class MainActivity extends AppCompatActivity {
                 winnerFlag = true;
             }
         }
-
         return winnerFlag;
+    }
+
+    private boolean isDraw(){
+        boolean drawFlag = true;
+        for(int i=0; i < gameState.length; i++){
+            //there is atleast one cell which is undefined where player can plase a coin
+            if(gameState[i] == Player.UNDEFINED){
+                drawFlag = false;
+            }
+        }
+        return drawFlag;
+    }
+
+    public void playAgain(View view){
+        resetGameState();
+        GridLayout gridLayout = (GridLayout) findViewById(R.id.gridLayout);
+        ((LinearLayout) findViewById(R.id.playAgainLayout)).setVisibility(View.INVISIBLE);
+        for (int i=0; i<gridLayout.getChildCount(); i++) {
+            ((ImageView) gridLayout.getChildAt(i)).setImageResource(0);
+        }
+        isGameActive = true;
+    }
+
+    private void resetGameState() {
+        for (int i=0; i<gameState.length;i++){
+            gameState[i] = Player.UNDEFINED;
+        }
+    }
+
+    public void exit(View view){
+        moveTaskToBack(true);
+        finish();
     }
 }
